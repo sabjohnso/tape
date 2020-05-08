@@ -5,6 +5,7 @@
 (provide
  Tape tape?
  make-tape build-tape
+ list->tape tape->list
  empty-tape tape-empty?
  tape-front? tape-back?
  tape-position tape-remaining tape-length
@@ -64,7 +65,7 @@
 
 (: tape-empty? (∀ (a) ((Tape a) . -> . Boolean)))
 (define (tape-empty? xs)
-  (equal? empty-tape xs))
+  (tape-equal? empty-tape xs))
 
 (: tape-position (∀ (a) ((Tape a) . -> . Natural)))
 (define (tape-position xs)
@@ -169,6 +170,10 @@
   (tape (append (tape-data xs) (tape-data (tape-front ys)))
         (tape-context xs)))
 
+(: tape-prepend (∀ (a) ((Tape a) (Tape a) . -> . (Tape a))))
+(define (tape-prepend xs ys)
+  (tape (tape-data ys) (append (tape-context ys) (tape-context (tape-back xs)))))
+
 (: tape-map/f (∀ (a b) ((a . -> . b) (Tape a) . -> . (Tape b))))
 (define (tape-map/f f xs)
   (tape (map f (tape-data xs)) (map f (tape-context xs))))
@@ -176,6 +181,10 @@
 (: tape-return (∀ (a) (a . -> . (Tape a))))
 (define (tape-return x)
   (tape (list x) '()))
+
+
+
+
 
 (: tape->list (∀ (a) ((Tape a) . -> . (Listof a))))
 (define (tape->list xs)
@@ -272,6 +281,9 @@
   (check-true
    (tape-empty? empty-tape))
 
+  (check-true
+   (tape-empty? (make-tape)))
+
   (check-true (tape-empty? empty-tape))
 
   (check-true
@@ -303,4 +315,24 @@
 
     (check-equal?
      (tape->list (tape-2exec - xs))
-     '(-1 3 4 5))))
+     '(-1 3 4 5)))
+
+  (let ([xs (make-tape 1 2)]
+        [ys (make-tape 3 4)])
+
+    (check-equal?
+     (tape->list (tape-prepend xs ys))
+     '(1 2 3 4))
+
+    (check-equal?
+     (tape->list (tape-append xs ys))
+     '(1 2 3 4))
+
+    (check-equal? (tape-position (tape-append xs ys)) 0)
+    (check-equal? (tape-position (tape-prepend xs ys)) 2)
+
+    (check-true
+     (tape-congruent? (tape-prepend xs ys) (tape-append xs ys)))
+    
+    (check-false
+     (tape-equal? (tape-prepend xs ys) (tape-append xs ys)))))
